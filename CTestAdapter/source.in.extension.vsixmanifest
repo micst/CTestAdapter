@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" 
+                 xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="CTestAdapter..B3638EFB-ADE7-4942-8AAD-329E5AF78779"
+              Version="@CTestAdapter_VERSION@" 
+              Language="en-US" 
+              Publisher="Michael Stürmer" />
+    <DisplayName>CTestAdapter</DisplayName>
+    <Description xml:space="preserve">Visual Studio Test Adapter for CTest</Description>
+    <MoreInfo>https://github.com/micst/CTestAdapter</MoreInfo>
+    <License>LICENSE.txt</License>
+    <Icon>Resources\CMake_logo.png</Icon>
+    <PreviewImage>Resources\screenshot.png</PreviewImage>
+    <Tags>CMake, CTest, TestAdapter, CTestAdapter, C++ Test</Tags>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Version="[@VS_VERSION@.0]" Id="Microsoft.VisualStudio.Enterprise" />
+    <InstallationTarget Version="[@VS_VERSION@.0]" Id="Microsoft.VisualStudio.Pro" />
+    <InstallationTarget Version="[@VS_VERSION@.0]" Id="Microsoft.VisualStudio.Community" />
+    <InstallationTarget Version="[@VS_VERSION@.0]" Id="Microsoft.VisualStudio.IntegratedShell" />
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
+    <Dependency Id="Microsoft.VisualStudio.MPF.@VS_VERSION@.0" DisplayName="Visual Studio MPF @VS_VERSION@.0" d:Source="Installed" Version="[@VS_VERSION@.0]" />
+  </Dependencies>
+  <Assets>
+    <Asset Type="UnitTestExtension" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+  </Assets>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[@VS_VERSION@.0]" DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+</PackageManifest>

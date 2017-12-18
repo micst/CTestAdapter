@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <!--This is the file that defines the IDs for all the commands exposed by VisualStudio. -->
+  <Extern href="stdidcmd.h"/>
+
+  <!--This header contains the command ids for the menus provided by the shell. -->
+  <Extern href="vsshlids.h"/>
+
+  <Commands package="guidCTestAdapterPackage">
+    <Groups>
+      <Group guid="guidCTestAdapterCmdSet" id="MyMenuGroup" priority="0x101">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+      </Group>
+    </Groups>
+    
+    <Buttons>
+      <Button guid="guidCTestAdapterCmdSet" id="MyCommand01" 
+              priority="0x101" type="Button">
+        <Parent guid="guidCTestAdapterCmdSet" id="MyMenuGroup"/>
+        <Strings>
+          <CommandName>MyCommand01</CommandName>
+          <ButtonText>CTest Adapter Settings</ButtonText>        
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+  
+  <Symbols>
+     <!-- package guid -->
+    <GuidSymbol name="guidCTestAdapterPackage" value="{14796bd1-9ea5-4eff-b4c0-bee11efbb735}" />
+    <!-- commands and menus -->
+    <GuidSymbol name="guidCTestAdapterCmdSet" value="{14796bd1-9ea5-4eff-b4c0-bee11efbb736}" >
+      <IDSymbol name="MyMenuGroup" value="0x1020" />
+      <IDSymbol name="MyCommand01" value="0x0100" />
+    </GuidSymbol>
+    <!-- resources -->
+    <GuidSymbol name="guidImages" 
+                value="{14796bd1-9ea5-4eff-b4c0-bee11efbb737}" />
+  </Symbols>
+</CommandTable>
