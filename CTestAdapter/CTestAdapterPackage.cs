@@ -31,6 +31,7 @@ namespace CTestAdapter
   [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionOpening_string)]
   public sealed class CTestAdapterPackage : Package, ILog
   {
+    private const string GitHubUrl = "https://github.com/micst/CTestAdapter";
     private const int ConfigurationTimerIntervalMs = 1000;
 
     private bool _ctestAdapterEnabled = false;
@@ -108,6 +109,8 @@ namespace CTestAdapter
           var name = Assembly.GetExecutingAssembly().GetName();
           this.Log(LogLevel.Debug, "assembly: " + name.Name);
           this.Log(LogLevel.Info, "version: " + name.Version.ToString());
+          this.Log(LogLevel.Info, "If you find any issues or want to contribute to the project, checkout");
+          this.Log(LogLevel.Info, "CTestAdapter on github: " + GitHubUrl);
           this.Log(LogLevel.Info, "-----------------------------------");
         }
         this._containerManager.CTestAdapterEnabled = value;
