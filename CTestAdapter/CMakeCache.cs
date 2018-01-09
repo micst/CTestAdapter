@@ -7,7 +7,7 @@ namespace CTestAdapter
 {
   public class CMakeCache : ILog
   {
-    private static readonly Regex CacheEntryRegex = new Regex(@"^([\w-\.]+):([^=]+)=(.*)$");
+    private static readonly Regex CacheEntryRegex = new Regex("^([\\w-\\.]+|\"[\\w-\\.:]+\"):([^=]+)=(.*)$");
 
     private enum CMakeCacheEntryType
     {
@@ -22,7 +22,7 @@ namespace CTestAdapter
       UNINITIALIZED
     }
 
-    private class CMakeCacheEntry
+    private struct CMakeCacheEntry
     {
       public string Name;
       public string Value;
@@ -127,6 +127,10 @@ namespace CTestAdapter
           Name = c[1],
           Value = c[3]
         };
+        if (entry.Name.StartsWith("\"") && entry.Name.Length > 2)
+        {
+          entry.Name = entry.Name.Substring(1, entry.Name.Length - 2);
+        }
         this._cacheEntries.Add(entry.Name, entry);
       }
       r.Close();
