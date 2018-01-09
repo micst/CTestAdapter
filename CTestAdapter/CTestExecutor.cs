@@ -49,7 +49,7 @@ namespace CTestAdapter
       this._runningFromSources = true;
       var logFileDir = this._config.CacheDir + "\\Testing\\Temporary";
       frameworkHandle.SendMessage(TestMessageLevel.Informational,
-          "CTestExecutor: logs are written to (file://" + logFileDir + ")");
+          "CTestExecutor: logs are written to (" + CTestExecutor.ToLinkPath(logFileDir) + ")");
       foreach (var s in enumerable)
       {
         var cases = TestContainerHelper.ParseTestContainerFile(s, frameworkHandle, null);
@@ -101,18 +101,18 @@ namespace CTestAdapter
       if (!Directory.Exists(this._config.CacheDir))
       {
         frameworkHandle.SendMessage(TestMessageLevel.Error,
-            "CTestExecutor: working directory not found: \"" + this._config.CacheDir + "\"");
+            "CTestExecutor: working directory not found: " + CTestExecutor.ToLinkPath(this._config.CacheDir));
         return;
       }
       frameworkHandle.SendMessage(TestMessageLevel.Informational,
-          "CTestExecutor: working directory is \"" + this._config.CacheDir + "\"");
+          "CTestExecutor: working directory is " + CTestExecutor.ToLinkPath(this._config.CacheDir));
       var logFileDir = this._config.CacheDir + "\\Testing\\Temporary";
       if (!this._runningFromSources)
       {
         frameworkHandle.SendMessage(TestMessageLevel.Informational,
             "CTestExecutor: ctest (" + this._config.CTestExecutable + ")");
         frameworkHandle.SendMessage(TestMessageLevel.Informational,
-            "CTestExecutor: logs are written to (file://" + logFileDir + ")");
+            "CTestExecutor: logs are written to (" + CTestExecutor.ToLinkPath(logFileDir) + ")");
       }
       // run test cases
       foreach (var test in testCases)
@@ -166,8 +166,8 @@ namespace CTestAdapter
         var output = process.StandardOutput.ReadToEnd();
         if (!File.Exists(logFileName))
         {
-          frameworkHandle.SendMessage(TestMessageLevel.Warning, "logfile not found: "
-                                                                + logFileName);
+          frameworkHandle.SendMessage(TestMessageLevel.Warning, "logfile not found: " 
+            + CTestExecutor.ToLinkPath(logFileName));
         }
         var content = File.ReadAllText(logFileName);
         var logFileBackup = test.FullyQualifiedName + ".log";
@@ -209,7 +209,7 @@ namespace CTestAdapter
               "CTestExecutor: END OF TEST OUTPUT FROM " + test.FullyQualifiedName);
         }
         frameworkHandle.SendMessage(TestMessageLevel.Informational,
-            "CTestExecutor: Log saved to file://" + logFileBackup);
+            "CTestExecutor: Log saved to " + CTestExecutor.ToLinkPath(logFileBackup));
         frameworkHandle.RecordResult(testResult);
       }
       frameworkHandle.SendMessage(TestMessageLevel.Informational, "CTestExecutor: running tests done");
@@ -221,6 +221,11 @@ namespace CTestAdapter
       this._config = CTestAdapterConfig.ReadFromDisk(Path.Combine(cacheDir, Constants.CTestAdapterConfigFileName)) ??
                      CTestAdapterConfig.ReadFromCache(cacheDir);
       return null != this._config;
+    }
+
+    private static string ToLinkPath(string pathName)
+    {
+      return "file://" + pathName.Replace(" ", "%20");
     }
   }
 }
