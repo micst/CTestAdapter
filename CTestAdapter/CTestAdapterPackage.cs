@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Timers;
 using CTestAdapter.Events;
@@ -102,6 +103,13 @@ namespace CTestAdapter
         this.Log(LogLevel.Info, value
           ? "++++ Enabled CTest Adapter ++++"
           : "++++ Disabled CTest Adapter ++++");
+        if (value)
+        {
+          var name = Assembly.GetExecutingAssembly().GetName();
+          this.Log(LogLevel.Debug, "assembly: " + name.Name);
+          this.Log(LogLevel.Info, "version: " + name.Version.ToString());
+          this.Log(LogLevel.Info, "-----------------------------------");
+        }
         this._containerManager.CTestAdapterEnabled = value;
       }
     }

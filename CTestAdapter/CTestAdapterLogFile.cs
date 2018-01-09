@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Text;
 
 namespace CTestAdapter
@@ -68,6 +69,7 @@ namespace CTestAdapter
       {
         return;
       }
+      this.Log(LogLevel.Info, "--------------------------------------");
       this.Log(LogLevel.Info, "closing logfile");
       this._writer.Close();
       this._writer.Dispose();
@@ -107,6 +109,10 @@ namespace CTestAdapter
       if (null != this._writer)
       {
         this.Log(LogLevel.Info, "opened logfile: " + newopts.LogFileName);
+        var name = Assembly.GetExecutingAssembly().GetName();
+        this.Log(LogLevel.Info, "assembly: " + name.Name);
+        this.Log(LogLevel.Info, "assembly version: " + name.Version.ToString());
+        this.Log(LogLevel.Info, "--------------------------------------");
       }
     }
   }
