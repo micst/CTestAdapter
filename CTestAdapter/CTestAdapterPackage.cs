@@ -34,6 +34,7 @@ namespace CTestAdapter
     private const string GitHubUrl = "https://github.com/micst/CTestAdapter";
     private const int ConfigurationTimerIntervalMs = 1000;
 
+    private bool _validRelease = false;
     private bool _ctestAdapterEnabled = false;
     private string _cMakeCacheDirectory = "";
     // private self-managed members
@@ -75,6 +76,7 @@ namespace CTestAdapter
       this._activeConfigurationTimer = new System.Timers.Timer(CTestAdapterPackage.ConfigurationTimerIntervalMs);
       this._activeConfigurationTimer.Elapsed += this.UpdateActiveConfiguration;
       this._containerManager.TestContainersChanged += this.OnTestContainersChanged;
+      this.SetValidRelease();
     }
 
     /**
@@ -109,6 +111,10 @@ namespace CTestAdapter
           var name = Assembly.GetExecutingAssembly().GetName();
           this.Log(LogLevel.Debug, "assembly: " + name.Name);
           this.Log(LogLevel.Info, "version: " + name.Version.ToString());
+          if (!this._validRelease)
+          {
+            this.Log(LogLevel.Info, "CAUTION: this is NOT a release version of CTestAdapter!");
+          }
           this.Log(LogLevel.Info, "If you find any issues or want to contribute to the project, checkout");
           this.Log(LogLevel.Info, "CTestAdapter on github: " + GitHubUrl);
           this.Log(LogLevel.Info, "-----------------------------------");
@@ -280,6 +286,25 @@ namespace CTestAdapter
         return;
       }
       this._log.Log(level, Constants.LogPrefixPckg + message);
+    }
+
+    private void SetValidRelease()
+    {
+      if (Assembly.GetExecutingAssembly().GetName().Version.Revision > 0)
+      {
+        return;
+      }
+      var attr = Assembly.GetExecutingAssembly()
+        .GetCustomAttributes(typeof(AssemblyConfigurationAttribute), false);
+      if (attr.Length > 0)
+      {
+        var aca = (AssemblyConfigurationAttribute) attr[0];
+        if (aca.Configuration != "Release")
+        {
+          return;
+        }
+      }
+      this._validRelease = true;
     }
   }
 }
