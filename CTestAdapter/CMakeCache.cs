@@ -13,12 +13,13 @@ namespace CTestAdapter
     {
       // ReSharper disable InconsistentNaming
       // ReSharper disable UnusedMember.Local
-      INTERNAL,
-      STATIC,
-      STRING,
       BOOL,
       PATH,
-      FILEPATH
+      FILEPATH,
+      STRING,
+      INTERNAL,
+      STATIC,
+      UNINITIALIZED
     }
 
     private class CMakeCacheEntry
