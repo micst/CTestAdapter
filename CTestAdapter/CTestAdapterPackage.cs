@@ -258,8 +258,14 @@ namespace CTestAdapter
       {
         return;
       }
-      this._config.ActiveConfiguration = sc.Name;
+      var name = sc.Name;
+      if (this._config.ActiveConfiguration == name)
+      {
+        return;
+      }
+      this._config.ActiveConfiguration = name;
       CTestAdapterConfig.WriteToDisk(this._config);
+      this._containerManager.FindTestContainers();
     }
 
     private LogWriterOptions GetLogWriterOptions(CTestAdapterOptionPage options)
