@@ -34,9 +34,16 @@ namespace CTestAdapter
 
     private CTestAdapterConfig _config;
 
+    private Process _proc = null;
+    private ProcessStartInfo _procParam;
+
     public void Cancel()
     {
       this._cancelled = true;
+      if (this._proc != null)
+      {
+        this._proc.Kill();
+      }
     }
 
     public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
@@ -116,34 +123,36 @@ namespace CTestAdapter
         frameworkHandle.SendMessage(TestMessageLevel.Informational,
             MessagePrefix + "logs are written to (" + CTestExecutor.ToLinkPath(logFileDir) + ")");
       }
-      // run test cases
-      foreach (var test in testCases)
+      this._proc = new Process();
+      if (this._procParam == null)
       {
-        if (this._cancelled)
+        this._procParam = new ProcessStartInfo
         {
-          break;
-        }
-        // verify we have a run directory and a ctest executable
-        var args = "-R \"^" + test.FullyQualifiedName + "$\"";
-        if (this._config.ActiveConfiguration.Any())
-        {
-          args += " -C \"" + this._config.ActiveConfiguration + "\"";
-        }
-        var startInfo = new ProcessStartInfo
-        {
-          Arguments = args,
-          FileName = this._config.CTestExecutable,
-          WorkingDirectory = this._config.CacheDir,
           CreateNoWindow = true,
           RedirectStandardOutput = true,
           RedirectStandardError = true,
           UseShellExecute = false,
           WindowStyle = ProcessWindowStyle.Hidden
         };
-        var process = new Process
+      }
+      // run test cases
+      foreach (var test in testCases)
+      {
+        var testResult = new TestResult(test)
         {
-          StartInfo = startInfo
+          ComputerName = Environment.MachineName,
+          Outcome = TestOutcome.Skipped
         };
+        // verify we have a run directory and a ctest executable
+        var args = "-R \"^" + test.FullyQualifiedName + "$\"";
+        if (this._config.ActiveConfiguration.Any())
+        {
+          args += " -C \"" + this._config.ActiveConfiguration + "\"";
+        }
+        this._procParam.Arguments = args;
+        this._procParam.FileName = this._config.CTestExecutable;
+        this._procParam.WorkingDirectory = this._config.CacheDir;
+        this._proc.StartInfo = this._procParam;
         var logFileName = logFileDir + "\\LastTest.log";
         if (File.Exists(logFileName))
         {
@@ -155,17 +164,25 @@ namespace CTestAdapter
           logMsg += " -C " + this._config.ActiveConfiguration;
         }
         frameworkHandle.SendMessage(TestMessageLevel.Informational, logMsg);
+        if (this._cancelled)
+        {
+          break;
+        }
         if (runContext.IsBeingDebugged)
         {
           /// @todo check if child process debugging is available?!?
-          process.Start();
+          this._proc.Start();
         }
         else
         {
-          process.Start();
+          this._proc.Start();
         }
-        process.WaitForExit();
-        var output = process.StandardOutput.ReadToEnd();
+        this._proc.WaitForExit();
+        if (this._cancelled)
+        {
+          break;
+        }
+        var output = this._proc.StandardOutput.ReadToEnd();
         if (!File.Exists(logFileName))
         {
           frameworkHandle.SendMessage(TestMessageLevel.Warning, "logfile not found: " 
@@ -194,13 +211,9 @@ namespace CTestAdapter
           frameworkHandle.SendMessage(TestMessageLevel.Warning,
               MessagePrefix + "could not get runtime of test " + test.FullyQualifiedName);
         }
-        var testResult = new TestResult(test)
-        {
-          ComputerName = Environment.MachineName,
-          Duration = timeSpan,
-          Outcome = process.ExitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed
-        };
-        if (process.ExitCode != 0)
+        testResult.Duration = timeSpan;
+        testResult.Outcome = this._proc.ExitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
+        if (this._proc.ExitCode != 0)
         {
           var matchesOutput = CTestExecutor.RegexOutput.Match(content);
           testResult.ErrorMessage = matchesOutput.Groups[CTestExecutor.RegexFieldOutput].Value;
@@ -214,6 +227,8 @@ namespace CTestAdapter
             MessagePrefix + "Log saved to " + CTestExecutor.ToLinkPath(logFileBackup));
         frameworkHandle.RecordResult(testResult);
       }
+      this._proc.Dispose();
+      this._proc = null;
       frameworkHandle.SendMessage(TestMessageLevel.Informational, MessagePrefix + "running tests done");
     }
 
