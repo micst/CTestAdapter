@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## 3.0.1 - 2018-01-10
+
+### Added
+
+ - CHANGELOG
+ - version information in log messages
+ - log warning if adapter is not a tagged release build
+ - add reference to github project to log
+
+### Fixed
+
+ - cancelling of tests
+ - locating add_test() command depending on active Configuration
+ - Visual Studio crash when regenerating with CMake
+ - correct visualization of file links to CTest log files
+
 ## 3.0.0 - 2017-12-18
 
 Initial version of CTestAdapter.
