@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using System.Xml.Serialization;
 
 namespace CTestAdapter
@@ -80,6 +81,10 @@ namespace CTestAdapter
         return;
       }
       var ser = new XmlSerializer(typeof(CTestAdapterConfig));
+      while (CTestAdapterConfig.IsFileLocked(cfg._configFileName))
+      {
+        Thread.Sleep(50);
+      }
       var str = new StreamWriter(cfg._configFileName);
       ser.Serialize(str, cfg);
       str.Close();
@@ -93,6 +98,10 @@ namespace CTestAdapter
         return null;
       }
       var ser = new XmlSerializer(typeof(CTestAdapterConfig));
+      while (CTestAdapterConfig.IsFileLocked(file))
+      {
+        Thread.Sleep(50);
+      }
       var str = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
       var cfg = (CTestAdapterConfig)ser.Deserialize(str);
       str.Close();
@@ -134,6 +143,32 @@ namespace CTestAdapter
         CacheDir = cache[Constants.CMakeCacheKey_CacheFileDir]
       };
       return cfg;
+    }
+
+    public static bool IsFileLocked(string filename)
+    {
+      if (!File.Exists(filename))
+      {
+        return false;
+      }
+      FileStream stream = null;
+      try
+      {
+        var finfo = new FileInfo(filename);
+        stream = finfo.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+      }
+      catch (IOException)
+      {
+        return true;
+      }
+      finally
+      {
+        if (stream != null)
+        {
+          stream.Close();
+        }
+      }
+      return false;
     }
   }
 }

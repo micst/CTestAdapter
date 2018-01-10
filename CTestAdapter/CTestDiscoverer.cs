@@ -40,7 +40,7 @@ namespace CTestAdapter
       var collection = TestContainerHelper.FindAllTestsWithCtest(cfg);
       foreach (var source in v)
       {
-        var cases = TestContainerHelper.ParseTestContainerFile(source, log, collection);
+        var cases = TestContainerHelper.ParseTestContainerFile(source, log, collection, cfg.ActiveConfiguration);
         foreach (var c in cases)
         {
           discoverySink.SendTestCase(c.Value);

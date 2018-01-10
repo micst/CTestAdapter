@@ -52,7 +52,7 @@ namespace CTestAdapter
           "CTestExecutor: logs are written to (" + CTestExecutor.ToLinkPath(logFileDir) + ")");
       foreach (var s in enumerable)
       {
-        var cases = TestContainerHelper.ParseTestContainerFile(s, frameworkHandle, null);
+        var cases = TestContainerHelper.ParseTestContainerFile(s, frameworkHandle, null, this._config.ActiveConfiguration);
         this.RunTests(cases.Values, runContext, frameworkHandle);
       }
       this._runningFromSources = false;
@@ -223,7 +223,7 @@ namespace CTestAdapter
       return null != this._config;
     }
 
-    private static string ToLinkPath(string pathName)
+    public static string ToLinkPath(string pathName)
     {
       return "file://" + pathName.Replace(" ", "%20");
     }
