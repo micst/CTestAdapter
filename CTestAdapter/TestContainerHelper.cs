@@ -97,7 +97,6 @@ namespace CTestAdapter
       CTestTestCollection collection, string activeConfiguration)
     {
       log.SendMessage(TestMessageLevel.Informational, "Parsing CTest file: " + CTestExecutor.ToLinkPath(source));
-      log.SendMessage(TestMessageLevel.Informational, "Configuration: " + activeConfiguration);
       var cases = new Dictionary<string, TestCase>();
       var content = File.ReadLines(source);
       var skipFoundTests = false;

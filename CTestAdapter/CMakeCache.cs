@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace CTestAdapter
 {
@@ -88,6 +89,10 @@ namespace CTestAdapter
       {
         this.Log(LogLevel.Error, "LoadCMakeCache: CMakeCache not found at:\"" + this._cmakeCacheFile + "\"");
         return;
+      }
+      while (CTestAdapterConfig.IsFileLocked(this._cmakeCacheFile))
+      {
+        Thread.Sleep(50);
       }
       var stream = new FileStream(this._cmakeCacheFile, FileMode.Open,
           FileAccess.Read, FileShare.ReadWrite);

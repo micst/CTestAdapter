@@ -37,6 +37,7 @@ namespace CTestAdapter
       {
         return;
       }
+      log.SendMessage(TestMessageLevel.Informational, "using configuration: " + cfg.ActiveConfiguration);
       var collection = TestContainerHelper.FindAllTestsWithCtest(cfg);
       foreach (var source in v)
       {
