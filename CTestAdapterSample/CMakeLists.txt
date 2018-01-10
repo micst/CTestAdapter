@@ -2,7 +2,7 @@ message(STATUS "adding CTestAdapter sample project"
   " (this will take some seconds)")
 
 set(sampleSourceDir "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(sampleBinaryDir "${CMAKE_CURRENT_BINARY_DIR}/src")
+set(sampleBinaryDir "${CMAKE_CURRENT_BINARY_DIR}/s r c")
 
 make_directory("${sampleBinaryDir}")
 

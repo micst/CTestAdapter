@@ -15,13 +15,13 @@ namespace CTestAdapter
     public const string TestFileName = "CTestTestfile";
 
     private const string FieldNameTestname = "testname";
-    private const string FieldNameIsExe = "isexe";
+    private const string FieldNameCfgRegex = "cfgregex";
+
+    private static readonly Regex IfLevelRegex =
+      new Regex("^(else|)if\\(\"\\${CTEST_CONFIGURATION_TYPE}\" MATCHES \"(?<" + FieldNameCfgRegex + ">.+)\"\\)$");
 
     private static readonly Regex AddTestRegex =
       new Regex(@"^\s*add_test\s*\((?<" + FieldNameTestname + @">\S+)\s.*\).*$");
-
-    private static readonly Regex IsExeRegex =
-      new Regex("^\\s*add_test\\s*\\(\\S+\\s+\"(?<" + FieldNameIsExe + ">[^\"]+)\".*\\)");
 
     /**
      * @brief verifies the file extension is .cmake
@@ -94,29 +94,50 @@ namespace CTestAdapter
     }
 
     public static Dictionary<string, TestCase> ParseTestContainerFile(string source, IMessageLogger log,
-      CTestTestCollection collection)
+      CTestTestCollection collection, string activeConfiguration)
     {
+      log.SendMessage(TestMessageLevel.Informational, "Parsing CTest file: " + CTestExecutor.ToLinkPath(source));
       var cases = new Dictionary<string, TestCase>();
       var content = File.ReadLines(source);
+      var skipFoundTests = false;
       var lineNumber = 0;
       foreach (var line in content)
       {
         lineNumber++;
-        var matches = TestContainerHelper.AddTestRegex.Matches(line);
-        foreach (var match in matches)
+        var ifcheck = TestContainerHelper.IfLevelRegex.Match(line);
+        if(ifcheck.Success)
         {
-          var m = match as Match;
-          if (m == null)
+          var cfgRegexString = ifcheck.Groups[FieldNameCfgRegex].Value;
+          var cfgRegex = new Regex(cfgRegexString);
+          skipFoundTests = !cfgRegex.IsMatch(activeConfiguration);
+          continue;
+        }
+        else if (line == "else()")
+        {
+          skipFoundTests = true;
+          continue;
+        }
+        else if (line == "endif()")
+        {
+          skipFoundTests = false;
+          continue;
+        }
+        var test = TestContainerHelper.AddTestRegex.Match(line);
+        if(test.Success)
+        {
+          var testname = test.Groups[FieldNameTestname].Value;
+          if (skipFoundTests)
           {
+            //log.SendMessage(TestMessageLevel.Warning,
+              //"skipping test because of Configuration mismatch: line " + lineNumber + ", test " + testname);
             continue;
           }
-          var testname = m.Groups[FieldNameTestname].Value;
           if (null != collection)
           {
             if (!collection.TestExists(testname))
             {
               log.SendMessage(TestMessageLevel.Warning,
-                "CTestDiscoverer.ParseTestContainerFile: test not listed by ctest -N :" + testname);
+                "test not listed by ctest -N : " + testname);
             }
           }
           if (cases.ContainsKey(testname))
@@ -136,7 +157,6 @@ namespace CTestAdapter
               testcase.DisplayName = collection[testname].Number.ToString().PadLeft(3, '0') + ": " + testname;
             }
           }
-          var isExe = IsExeRegex.Match(line);
           cases.Add(testname, testcase);
         }
       }

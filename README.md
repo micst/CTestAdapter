@@ -32,6 +32,12 @@ For information how to build, test and debug CTestAdapter see [BUILDING](BUILDIN
 
 ----
 
+## Changelog
+
+See the [CHANGELOG](CHANGELOG.md) for history information.
+
+----
+
 ## Credits
 
 While this project is a complete rewrite of the original [CTestTestAdapter](https://github.com/toeb/CTestTestAdapter)

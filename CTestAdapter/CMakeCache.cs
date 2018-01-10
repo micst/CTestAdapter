@@ -2,26 +2,28 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace CTestAdapter
 {
   public class CMakeCache : ILog
   {
-    private static readonly Regex CacheEntryRegex = new Regex(@"^([\w-\.]+):([^=]+)=(.*)$");
+    private static readonly Regex CacheEntryRegex = new Regex("^([\\w-\\.]+|\"[\\w-\\.:]+\"):([^=]+)=(.*)$");
 
     private enum CMakeCacheEntryType
     {
       // ReSharper disable InconsistentNaming
       // ReSharper disable UnusedMember.Local
-      INTERNAL,
-      STATIC,
-      STRING,
       BOOL,
       PATH,
-      FILEPATH
+      FILEPATH,
+      STRING,
+      INTERNAL,
+      STATIC,
+      UNINITIALIZED
     }
 
-    private class CMakeCacheEntry
+    private struct CMakeCacheEntry
     {
       public string Name;
       public string Value;
@@ -88,6 +90,10 @@ namespace CTestAdapter
         this.Log(LogLevel.Error, "LoadCMakeCache: CMakeCache not found at:\"" + this._cmakeCacheFile + "\"");
         return;
       }
+      while (CTestAdapterConfig.IsFileLocked(this._cmakeCacheFile))
+      {
+        Thread.Sleep(50);
+      }
       var stream = new FileStream(this._cmakeCacheFile, FileMode.Open,
           FileAccess.Read, FileShare.ReadWrite);
       var r = new StreamReader(stream);
@@ -126,6 +132,10 @@ namespace CTestAdapter
           Name = c[1],
           Value = c[3]
         };
+        if (entry.Name.StartsWith("\"") && entry.Name.Length > 2)
+        {
+          entry.Name = entry.Name.Substring(1, entry.Name.Length - 2);
+        }
         this._cacheEntries.Add(entry.Name, entry);
       }
       r.Close();
