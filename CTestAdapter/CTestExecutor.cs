@@ -55,6 +55,8 @@ namespace CTestAdapter
         frameworkHandle.SendMessage(TestMessageLevel.Error, MessagePrefix + "could not initialize environment (src)");
         return;
       }
+      frameworkHandle.SendMessage(TestMessageLevel.Informational, "using configuration: " 
+        + this._config.ActiveConfiguration);
       this._runningFromSources = true;
       var logFileDir = this._config.CacheDir + "\\Testing\\Temporary";
       frameworkHandle.SendMessage(TestMessageLevel.Informational,
