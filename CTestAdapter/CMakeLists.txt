@@ -61,6 +61,7 @@ elseif(${VS_VERSION} EQUAL 15)
     Microsoft.VisualStudio.Imaging
     Microsoft.VisualStudio.Utilities
     Microsoft.VisualStudio.Shell.Framework
+    Microsoft.VisualStudio.Shell.Interop.15.0.DesignTime
     Microsoft.VisualStudio.Shell.Interop.15.3.DesignTime)
 else()
 endif()

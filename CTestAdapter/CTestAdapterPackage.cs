@@ -7,6 +7,7 @@ using CTestAdapter.Events;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using EnvDTE;
+using Microsoft.VisualStudio.PlatformUI;
 
 namespace CTestAdapter
 {
@@ -31,6 +32,13 @@ namespace CTestAdapter
   [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionOpening_string)]
   public sealed class CTestAdapterPackage : Package, ILog
   {
+    public enum ProjectType
+    {
+      Undefined,
+      Solution,
+      Folder
+    }
+
     private const string GitHubUrl = "https://github.com/micst/CTestAdapter";
     private const int ConfigurationTimerIntervalMs = 1000;
 
@@ -41,6 +49,7 @@ namespace CTestAdapter
     private readonly CTestAdapterConfig _config;
     private readonly DTE _dte;
     private readonly SolutionEventListener _sol;
+    private readonly FolderEventListener _dir;
     private readonly CMakeCache _cmakeCache;
     private readonly CMakeCacheWatcher _cMakeCacheWatcher;
     private readonly TestContainerManager _containerManager;
@@ -48,6 +57,7 @@ namespace CTestAdapter
     private readonly ILogWriter _log;
     //
     private CTestContainerDiscoverer _discoverer = null;
+    private ProjectType _projectType = ProjectType.Undefined;
 
     /**
      * @brief initialization WITHOUT Visual Studio services available.
@@ -64,8 +74,11 @@ namespace CTestAdapter
       // basic solution events
       this._log = new CTestAdapterLog();
       this._sol = new SolutionEventListener(Microsoft.VisualStudio.Shell.ServiceProvider.GlobalProvider);
+      this._dir = new FolderEventListener(Microsoft.VisualStudio.Shell.ServiceProvider.GlobalProvider);
       this._sol.SolutionLoaded += this.SolutionLoaded;
-      this._sol.SolutionUnloaded += this.SolutionUnloaded;
+      this._sol.SolutionUnloaded += this.Unloaded;
+      this._dir.SolutionLoaded += this.FolderLoaded;
+      this._dir.SolutionUnloaded += this.Unloaded;
       // cmake cache & cmake test file
       this._config = new CTestAdapterConfig();
       this._cmakeCache = new CMakeCache(this._log);
@@ -173,6 +186,7 @@ namespace CTestAdapter
         this.Log(LogLevel.Error, "could not set CMakeCache directory");
         return;
       }
+      this._projectType = ProjectType.Solution;
       // update logfile name
       this._log.Activate();
       var cfg = this._log.GetOptions();
@@ -184,13 +198,30 @@ namespace CTestAdapter
       this._activeConfigurationTimer.Start();
     }
 
-    private void SolutionUnloaded()
+    private void FolderLoaded(object sender, FolderEventArgs args)
     {
+      this._projectType = ProjectType.Folder;
+      this._log.Activate();
+      this.CMakeCacheDirectory = args.FolderPath;
+      this.Log(LogLevel.Info, "loading folder:" + args.FolderPath);
+    }
+
+    private void Unloaded()
+    {
+      if (this._projectType == ProjectType.Folder)
+      {
+        this.Log(LogLevel.Debug, "unloaded folder: " + this.CMakeCacheDirectory);
+      }
+      if (this._projectType == ProjectType.Solution)
+      {
+        this.Log(LogLevel.Debug, "unloaded solution: " + this.CMakeCacheDirectory);
+      }
       this._cMakeCacheWatcher.StopWatching();
       this.CTestAdapterEnabled = false;
       this.CMakeCacheDirectory = "";
       this._activeConfigurationTimer.Stop();
       this._log.Deactivate();
+      this._projectType = ProjectType.Undefined;
     }
 
     private void OnCMakeCacheChanged()
@@ -263,6 +294,11 @@ namespace CTestAdapter
       {
         return;
       }
+      if (this._projectType == ProjectType.Folder)
+      {
+        // @todo we have to change the cmake cache directory here!!! 
+      }
+      this.Log(LogLevel.Debug, "setting configuration to " + name);
       this._config.ActiveConfiguration = name;
       CTestAdapterConfig.WriteToDisk(this._config);
       this._containerManager.FindTestContainers();
