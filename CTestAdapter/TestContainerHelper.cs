@@ -116,7 +116,7 @@ namespace CTestAdapter
     public static Dictionary<string, TestCase> ParseTestContainerFile(string source, IMessageLogger log,
       CTestTestCollection collection, string activeConfiguration)
     {
-      log.SendMessage(TestMessageLevel.Informational, "Parsing CTest file: " + CTestExecutor.ToLinkPath(source));
+      log.SendMessage(TestMessageLevel.Informational, "Parsing CTest file: " + TestContainerHelper.ToLinkPath(source));
       var cases = new Dictionary<string, TestCase>();
       var content = File.ReadLines(source);
       var skipFoundTests = false;
@@ -216,6 +216,11 @@ namespace CTestAdapter
         }
         fileOrDirectory = info.Parent.FullName;
       }
+    }
+
+    public static string ToLinkPath(string pathName)
+    {
+      return "file://" + pathName.Replace(" ", "%20");
     }
   }
 }
