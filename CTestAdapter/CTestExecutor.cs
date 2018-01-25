@@ -62,9 +62,8 @@ namespace CTestAdapter
       this._log = frameworkHandle;
       this.Log(TestMessageLevel.Informational, "running tests (src) ...");
       var enumerable = sources as IList<string> ?? sources.ToList();
-      if(!this.SetupEnvironment(enumerable.First(), frameworkHandle))
+      if(!this.SetupEnvironment(enumerable.First()))
       {
-        this.Log(TestMessageLevel.Error, "could not initialize environment (src)");
         return;
       }
       this.Log(TestMessageLevel.Informational, "using configuration: " 
@@ -93,9 +92,8 @@ namespace CTestAdapter
       }
       if (!this._runningFromSources)
       {
-        if(!this.SetupEnvironment(testCases.First().Source, frameworkHandle))
+        if(!this.SetupEnvironment(testCases.First().Source))
         {
-          this.Log(TestMessageLevel.Error, "could not initialize environment");
           return;
         }
       }
@@ -247,12 +245,17 @@ namespace CTestAdapter
       this.Log(TestMessageLevel.Informational, "running tests done");
     }
 
-    private bool SetupEnvironment(string source, IMessageLogger h)
+    private bool SetupEnvironment(string source)
     {
       var cacheDir = TestContainerHelper.FindCMakeCacheDirectory(source);
       this._config = CTestAdapterConfig.ReadFromDisk(Path.Combine(cacheDir, Constants.CTestAdapterConfigFileName)) ??
                      CTestAdapterConfig.ReadFromCache(cacheDir);
-      return null != this._config;
+      if (this._config == null)
+      {
+        this.Log(TestMessageLevel.Error, "could not initialize environment");
+        return false;
+      }
+      return true;
     }
   }
 }
