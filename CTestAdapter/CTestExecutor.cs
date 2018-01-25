@@ -57,12 +57,13 @@ namespace CTestAdapter
       }
     }
 
-    public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
+    public void RunTests(IEnumerable<string> sources, IRunContext runContext,
+      IFrameworkHandle frameworkHandle)
     {
       this._log = frameworkHandle;
       this.Log(TestMessageLevel.Informational, "running tests (src) ...");
-      var enumerable = sources as IList<string> ?? sources.ToList();
-      if(!this.SetupEnvironment(enumerable.First()))
+      var sourcesList = sources as IList<string> ?? sources.ToList();
+      if(!this.SetupEnvironment(sourcesList.First()))
       {
         return;
       }
@@ -72,16 +73,18 @@ namespace CTestAdapter
       var logFileDir = this._config.CacheDir + "\\Testing\\Temporary";
       this.Log(TestMessageLevel.Informational,
           "logs are written to (" + TestContainerHelper.ToLinkPath(logFileDir) + ")");
-      foreach (var s in enumerable)
+      foreach (var source in sourcesList)
       {
-        var cases = TestContainerHelper.ParseTestContainerFile(s, frameworkHandle, null, this._config.ActiveConfiguration);
+        var cases = TestContainerHelper.ParseTestContainerFile(
+          source, frameworkHandle, null, this._config.ActiveConfiguration);
         this.RunTests(cases.Values, runContext, frameworkHandle);
       }
       this._runningFromSources = false;
       this.Log(TestMessageLevel.Informational, "running tests (src) done");
     }
 
-    public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
+    public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext,
+      IFrameworkHandle frameworkHandle)
     {
       this._log = frameworkHandle;
       this.Log(TestMessageLevel.Informational, "running tests ...");
