@@ -100,16 +100,18 @@ namespace CTestAdapter
           return;
         }
       }
+      // make sure a configuration is set
       if (!this._config.ActiveConfiguration.Any())
       {
-        // get configuration name from cmake cache, pick first found
-        var typeString = this._config.CMakeConfigurationTypes;
-        var types = typeString.Split(';');
-        if (types.Any())
+        if (this._config.TrySetActiveConfigFromConfigTypes())
         {
-          this._config.ActiveConfiguration = types.First();
           this.Log(TestMessageLevel.Warning,
-              "Configuration fallback to: " + this._config.ActiveConfiguration);
+            "Configuration fallback to: " + this._config.ActiveConfiguration);
+        }
+        else
+        {
+          this.Log(TestMessageLevel.Error, "could not set Configuration");
+          return;
         }
       }
       if (!this._config.ActiveConfiguration.Any())

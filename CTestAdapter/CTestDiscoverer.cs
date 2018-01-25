@@ -49,7 +49,22 @@ namespace CTestAdapter
                 CTestAdapterConfig.ReadFromCache(cacheDir);
       if (null == cfg)
       {
+        this.Log(TestMessageLevel.Error, "could not create CTestAdapterConfig");
         return;
+      }
+      // make sure a configuration is set
+      if (!cfg.ActiveConfiguration.Any())
+      {
+        if (cfg.TrySetActiveConfigFromConfigTypes())
+        {
+          this.Log(TestMessageLevel.Warning,
+            "Configuration fallback to: " + cfg.ActiveConfiguration);
+        }
+        else
+        {
+          this.Log(TestMessageLevel.Error, "could not set Configuration");
+          return;
+        }
       }
       this.Log(TestMessageLevel.Informational, "using configuration: " + cfg.ActiveConfiguration);
       var collection = TestContainerHelper.FindAllTestsWithCtest(cfg);
