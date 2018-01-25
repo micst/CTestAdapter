@@ -93,6 +93,26 @@ namespace CTestAdapter
       return collection;
     }
 
+    public static string FindCTestExe(string basePath)
+    {
+      var file = new FileInfo(Path.Combine(basePath, Constants.CTestExecutableName));
+      if (file.Exists)
+      {
+        return file.FullName;
+      }
+      var cdir = new DirectoryInfo(basePath);
+      var subdirs = cdir.GetDirectories();
+      foreach (var dir in subdirs)
+      {
+        var res = TestContainerHelper.FindCTestExe(dir.FullName);
+        if (res != string.Empty)
+        {
+          return res;
+        }
+      }
+      return string.Empty;
+    }
+
     public static Dictionary<string, TestCase> ParseTestContainerFile(string source, IMessageLogger log,
       CTestTestCollection collection, string activeConfiguration)
     {
