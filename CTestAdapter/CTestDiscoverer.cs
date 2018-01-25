@@ -16,18 +16,32 @@ namespace CTestAdapter
     // @todo CHECK HOW OFTEN TEST DISCOVERERS ARE INSTANTIATED!!!
     //       IS IT WORTH TO STORE INFORMATION?!?!?!?
 
+    private const string LogPrefix = "CTestDiscoverer: ";
+
+    private IMessageLogger _log = null;
+
+    private void Log(TestMessageLevel lvl, string message)
+    {
+      if (this._log == null)
+      {
+        return;
+      }
+      this._log.SendMessage(lvl, CTestDiscoverer.LogPrefix + message);
+    }
+
     public void DiscoverTests(IEnumerable<string> sources,
         IDiscoveryContext discoveryContext,
-        IMessageLogger log,
+        IMessageLogger logger,
         ITestCaseDiscoverySink discoverySink)
     {
-      log.SendMessage(TestMessageLevel.Informational, "CTestDiscoverer discovering ...");
+      this._log = logger;
+      this.Log(TestMessageLevel.Informational, "discovering ...");
       var v = sources as IList<string> ?? sources.ToList();
       // verify we have a CMakeCache.txt directory
       var cacheDir = TestContainerHelper.FindCMakeCacheDirectory(v.First());
       if (!cacheDir.Any())
       {
-        log.SendMessage(TestMessageLevel.Informational, "cmake cache not found");
+        this.Log(TestMessageLevel.Informational, "cmake cache not found");
         return;
       }
       // read parameters
@@ -37,17 +51,17 @@ namespace CTestAdapter
       {
         return;
       }
-      log.SendMessage(TestMessageLevel.Informational, "using configuration: " + cfg.ActiveConfiguration);
+      this.Log(TestMessageLevel.Informational, "using configuration: " + cfg.ActiveConfiguration);
       var collection = TestContainerHelper.FindAllTestsWithCtest(cfg);
       foreach (var source in v)
       {
-        var cases = TestContainerHelper.ParseTestContainerFile(source, log, collection, cfg.ActiveConfiguration);
+        var cases = TestContainerHelper.ParseTestContainerFile(source, this._log, collection, cfg.ActiveConfiguration);
         foreach (var c in cases)
         {
           discoverySink.SendTestCase(c.Value);
         }
       }
-      log.SendMessage(TestMessageLevel.Informational, "CTestDiscoverer discovering done");
+      this.Log(TestMessageLevel.Informational, "discovering done");
     }
   }
 }
