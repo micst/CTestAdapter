@@ -67,6 +67,19 @@ namespace CTestAdapter
         }
       }
       this.Log(TestMessageLevel.Informational, "using configuration: " + cfg.ActiveConfiguration);
+      // make sure we have a ctest executable
+      if (!File.Exists(cfg.CTestExecutable))
+      {
+        cfg.CTestExecutable = TestContainerHelper.FindCTestExe(cfg.CacheDir);
+      }
+      if (!File.Exists(cfg.CTestExecutable))
+      {
+        this.Log(TestMessageLevel.Error,
+          "ctest not found, tried: \"" + cfg.CTestExecutable + "\"");
+        return;
+      }
+      this.Log(TestMessageLevel.Informational, "using ctest binary: " + cfg.CTestExecutable);
+      // collect all existing tests by executing ctest
       var collection = TestContainerHelper.FindAllTestsWithCtest(cfg);
       foreach (var source in v)
       {

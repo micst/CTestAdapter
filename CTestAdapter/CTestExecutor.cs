@@ -114,15 +114,15 @@ namespace CTestAdapter
           return;
         }
       }
-      if (!this._config.ActiveConfiguration.Any())
+      // make sure we have a ctest executable
+      if (!File.Exists(this._config.CTestExecutable))
       {
-        this.Log(TestMessageLevel.Warning,
-            "no build configuration found");
+        this._config.CTestExecutable = TestContainerHelper.FindCTestExe(this._config.CacheDir);
       }
       if (!File.Exists(this._config.CTestExecutable))
       {
         this.Log(TestMessageLevel.Error,
-            "ctest not found: \"" + this._config.CTestExecutable + "\"");
+            "ctest not found, tried: \"" + this._config.CTestExecutable + "\"");
         return;
       }
       if (!Directory.Exists(this._config.CacheDir))
