@@ -34,6 +34,7 @@ namespace CTestAdapter
 
     private CTestAdapterConfig _config;
 
+    private Process _parentProcess = null;
     private Process _ctestProcess = null;
     private ProcessStartInfo _procParam;
 
@@ -50,11 +51,14 @@ namespace CTestAdapter
 
     public void Cancel()
     {
-      this._cancelled = true;
-      if (this._ctestProcess != null)
+      this.Log(TestMessageLevel.Informational, "cancelling test run");
+      if (this._ctestProcess == null || this._parentProcess == null)
       {
-        this._ctestProcess.Kill();
+        this.Log(TestMessageLevel.Warning, "cannot cancel");
+        return;
       }
+      this._cancelled = true;
+      this._ctestProcess.Kill();
     }
 
     public void RunTests(IEnumerable<string> sources, IRunContext runContext,
@@ -141,6 +145,7 @@ namespace CTestAdapter
         this.Log(TestMessageLevel.Informational,
             "logs are written to (" + TestContainerHelper.ToLinkPath(logFileDir) + ")");
       }
+      this._parentProcess = Process.GetCurrentProcess();
       this._ctestProcess = new Process();
       if (this._procParam == null)
       {
@@ -247,6 +252,7 @@ namespace CTestAdapter
       }
       this._ctestProcess.Dispose();
       this._ctestProcess = null;
+      this._parentProcess = null;
       this.Log(TestMessageLevel.Informational, "running tests done");
     }
 
