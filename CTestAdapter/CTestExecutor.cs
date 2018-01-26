@@ -34,7 +34,7 @@ namespace CTestAdapter
 
     private CTestAdapterConfig _config;
 
-    private Process _proc = null;
+    private Process _ctestProcess = null;
     private ProcessStartInfo _procParam;
 
     private IMessageLogger _log = null;
@@ -51,9 +51,9 @@ namespace CTestAdapter
     public void Cancel()
     {
       this._cancelled = true;
-      if (this._proc != null)
+      if (this._ctestProcess != null)
       {
-        this._proc.Kill();
+        this._ctestProcess.Kill();
       }
     }
 
@@ -141,7 +141,7 @@ namespace CTestAdapter
         this.Log(TestMessageLevel.Informational,
             "logs are written to (" + TestContainerHelper.ToLinkPath(logFileDir) + ")");
       }
-      this._proc = new Process();
+      this._ctestProcess = new Process();
       if (this._procParam == null)
       {
         this._procParam = new ProcessStartInfo
@@ -170,7 +170,7 @@ namespace CTestAdapter
         this._procParam.Arguments = args;
         this._procParam.FileName = this._config.CTestExecutable;
         this._procParam.WorkingDirectory = this._config.CacheDir;
-        this._proc.StartInfo = this._procParam;
+        this._ctestProcess.StartInfo = this._procParam;
         var logFileName = logFileDir + "\\LastTest.log";
         if (File.Exists(logFileName))
         {
@@ -189,18 +189,18 @@ namespace CTestAdapter
         if (runContext.IsBeingDebugged)
         {
           /// @todo check if child process debugging is available?!?
-          this._proc.Start();
+          this._ctestProcess.Start();
         }
         else
         {
-          this._proc.Start();
+          this._ctestProcess.Start();
         }
-        this._proc.WaitForExit();
+        this._ctestProcess.WaitForExit();
         if (this._cancelled)
         {
           break;
         }
-        var output = this._proc.StandardOutput.ReadToEnd();
+        var output = this._ctestProcess.StandardOutput.ReadToEnd();
         if (!File.Exists(logFileName))
         {
           this.Log(TestMessageLevel.Warning, "logfile not found: " 
@@ -230,8 +230,8 @@ namespace CTestAdapter
               "could not get runtime of test " + test.FullyQualifiedName);
         }
         testResult.Duration = timeSpan;
-        testResult.Outcome = this._proc.ExitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
-        if (this._proc.ExitCode != 0)
+        testResult.Outcome = this._ctestProcess.ExitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
+        if (this._ctestProcess.ExitCode != 0)
         {
           var matchesOutput = CTestExecutor.RegexOutput.Match(content);
           testResult.ErrorMessage = matchesOutput.Groups[CTestExecutor.RegexFieldOutput].Value;
@@ -245,8 +245,8 @@ namespace CTestAdapter
             "Log saved to " + TestContainerHelper.ToLinkPath(logFileBackup));
         frameworkHandle.RecordResult(testResult);
       }
-      this._proc.Dispose();
-      this._proc = null;
+      this._ctestProcess.Dispose();
+      this._ctestProcess = null;
       this.Log(TestMessageLevel.Informational, "running tests done");
     }
 
