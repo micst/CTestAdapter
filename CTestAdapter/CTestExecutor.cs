@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using JobManagement;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
 namespace CTestAdapter
@@ -58,7 +59,14 @@ namespace CTestAdapter
         return;
       }
       this._cancelled = true;
+#if false
       this._ctestProcess.Kill();
+#else
+      var job = new Job();
+      job.AddProcess(this._parentProcess.Id);
+      job.AddProcess(this._ctestProcess.Id);
+      job.Dispose();
+#endif
     }
 
     public void RunTests(IEnumerable<string> sources, IRunContext runContext,
