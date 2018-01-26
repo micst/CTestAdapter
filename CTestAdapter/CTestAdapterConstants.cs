@@ -15,6 +15,8 @@ namespace CTestAdapter
 
     public static readonly Guid OutputWindow = new Guid("231F0144-E723-4FD5-A62B-DADCFF615067");
 
+    public const string CTestExecutableName = "ctest.exe";
+
     public const string CMakeCacheFilename = "CMakeCache.txt";
     public const string CTestTestFileName = "CTestTestfile.cmake";
     public const string CTestAdapterConfigFileName = "CTestAdapter.config";

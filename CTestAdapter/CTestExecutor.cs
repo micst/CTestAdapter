@@ -15,7 +15,7 @@ namespace CTestAdapter
   {
     public static readonly Uri ExecutorUri = new Uri(Constants.ExecutorUriString);
 
-    private const string MessagePrefix = "CTestExecutor: ";
+    private const string LogPrefix = "CTestExecutor: ";
 
     private const string RegexFieldOutput = "output";
     private const string RegexFieldDuration = "duration";
@@ -34,45 +34,64 @@ namespace CTestAdapter
 
     private CTestAdapterConfig _config;
 
-    private Process _proc = null;
+    private Process _parentProcess = null;
+    private Process _ctestProcess = null;
     private ProcessStartInfo _procParam;
+
+    private IMessageLogger _log = null;
+
+    private void Log(TestMessageLevel lvl, string message)
+    {
+      if (this._log == null)
+      {
+        return;
+      }
+      this._log.SendMessage(lvl, CTestExecutor.LogPrefix + " " + message);
+    }
 
     public void Cancel()
     {
-      this._cancelled = true;
-      if (this._proc != null)
+      this.Log(TestMessageLevel.Informational, "cancelling test run");
+      if (this._ctestProcess == null || this._parentProcess == null)
       {
-        this._proc.Kill();
-      }
-    }
-
-    public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
-    {
-      frameworkHandle.SendMessage(TestMessageLevel.Informational, MessagePrefix + "running tests (src) ...");
-      var enumerable = sources as IList<string> ?? sources.ToList();
-      if(!this.SetupEnvironment(enumerable.First(), frameworkHandle))
-      {
-        frameworkHandle.SendMessage(TestMessageLevel.Error, MessagePrefix + "could not initialize environment (src)");
+        this.Log(TestMessageLevel.Warning, "cannot cancel");
         return;
       }
-      frameworkHandle.SendMessage(TestMessageLevel.Informational, "using configuration: " 
+      this._cancelled = true;
+      this._ctestProcess.Kill();
+    }
+
+    public void RunTests(IEnumerable<string> sources, IRunContext runContext,
+      IFrameworkHandle frameworkHandle)
+    {
+      this._log = frameworkHandle;
+      this.Log(TestMessageLevel.Informational, "running tests (src) ...");
+      var sourcesList = sources as IList<string> ?? sources.ToList();
+      if(!this.SetupEnvironment(sourcesList.First()))
+      {
+        return;
+      }
+      this.Log(TestMessageLevel.Informational, "using configuration: " 
         + this._config.ActiveConfiguration);
       this._runningFromSources = true;
       var logFileDir = this._config.CacheDir + "\\Testing\\Temporary";
-      frameworkHandle.SendMessage(TestMessageLevel.Informational,
-          MessagePrefix + "logs are written to (" + CTestExecutor.ToLinkPath(logFileDir) + ")");
-      foreach (var s in enumerable)
+      this.Log(TestMessageLevel.Informational,
+          "logs are written to (" + TestContainerHelper.ToLinkPath(logFileDir) + ")");
+      foreach (var source in sourcesList)
       {
-        var cases = TestContainerHelper.ParseTestContainerFile(s, frameworkHandle, null, this._config.ActiveConfiguration);
+        var cases = TestContainerHelper.ParseTestContainerFile(
+          source, frameworkHandle, null, this._config.ActiveConfiguration);
         this.RunTests(cases.Values, runContext, frameworkHandle);
       }
       this._runningFromSources = false;
-      frameworkHandle.SendMessage(TestMessageLevel.Informational, MessagePrefix + "running tests (src) done");
+      this.Log(TestMessageLevel.Informational, "running tests (src) done");
     }
 
-    public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
+    public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext,
+      IFrameworkHandle frameworkHandle)
     {
-      frameworkHandle.SendMessage(TestMessageLevel.Informational, MessagePrefix + "running tests ...");
+      this._log = frameworkHandle;
+      this.Log(TestMessageLevel.Informational, "running tests ...");
       var testCases = tests as IList<TestCase> ?? tests.ToList();
       if (!testCases.Any())
       {
@@ -80,52 +99,54 @@ namespace CTestAdapter
       }
       if (!this._runningFromSources)
       {
-        if(!this.SetupEnvironment(testCases.First().Source, frameworkHandle))
+        if(!this.SetupEnvironment(testCases.First().Source))
         {
-          frameworkHandle.SendMessage(TestMessageLevel.Error, MessagePrefix + "could not initialize environment");
           return;
         }
       }
+      // make sure a configuration is set
       if (!this._config.ActiveConfiguration.Any())
       {
-        // get configuration name from cmake cache, pick first found
-        var typeString = this._config.CMakeConfigurationTypes;
-        var types = typeString.Split(';');
-        if (types.Any())
+        if (this._config.TrySetActiveConfigFromConfigTypes())
         {
-          this._config.ActiveConfiguration = types.First();
-          frameworkHandle.SendMessage(TestMessageLevel.Warning,
-              MessagePrefix + "Configuration fallback to: " + this._config.ActiveConfiguration);
+          this.Log(TestMessageLevel.Warning,
+            "Configuration fallback to: " + this._config.ActiveConfiguration);
+        }
+        else
+        {
+          this.Log(TestMessageLevel.Error, "could not set Configuration");
+          return;
         }
       }
-      if (!this._config.ActiveConfiguration.Any())
+      // make sure we have a ctest executable
+      if (!File.Exists(this._config.CTestExecutable))
       {
-        frameworkHandle.SendMessage(TestMessageLevel.Warning,
-            MessagePrefix + "no build configuration found");
+        this._config.CTestExecutable = TestContainerHelper.FindCTestExe(this._config.CacheDir);
       }
       if (!File.Exists(this._config.CTestExecutable))
       {
-        frameworkHandle.SendMessage(TestMessageLevel.Error,
-            MessagePrefix + "ctest not found: \"" + this._config.CTestExecutable + "\"");
+        this.Log(TestMessageLevel.Error,
+            "ctest not found, tried: \"" + this._config.CTestExecutable + "\"");
         return;
       }
       if (!Directory.Exists(this._config.CacheDir))
       {
-        frameworkHandle.SendMessage(TestMessageLevel.Error,
-            MessagePrefix + "working directory not found: " + CTestExecutor.ToLinkPath(this._config.CacheDir));
+        this.Log(TestMessageLevel.Error,
+            "working directory not found: " + TestContainerHelper.ToLinkPath(this._config.CacheDir));
         return;
       }
-      frameworkHandle.SendMessage(TestMessageLevel.Informational,
-          MessagePrefix + "working directory is " + CTestExecutor.ToLinkPath(this._config.CacheDir));
+      this.Log(TestMessageLevel.Informational,
+          "working directory is " + TestContainerHelper.ToLinkPath(this._config.CacheDir));
       var logFileDir = this._config.CacheDir + "\\Testing\\Temporary";
       if (!this._runningFromSources)
       {
-        frameworkHandle.SendMessage(TestMessageLevel.Informational,
-            MessagePrefix + "ctest (" + this._config.CTestExecutable + ")");
-        frameworkHandle.SendMessage(TestMessageLevel.Informational,
-            MessagePrefix + "logs are written to (" + CTestExecutor.ToLinkPath(logFileDir) + ")");
+        this.Log(TestMessageLevel.Informational,
+            "ctest (" + this._config.CTestExecutable + ")");
+        this.Log(TestMessageLevel.Informational,
+            "logs are written to (" + TestContainerHelper.ToLinkPath(logFileDir) + ")");
       }
-      this._proc = new Process();
+      this._parentProcess = Process.GetCurrentProcess();
+      this._ctestProcess = new Process();
       if (this._procParam == null)
       {
         this._procParam = new ProcessStartInfo
@@ -154,18 +175,18 @@ namespace CTestAdapter
         this._procParam.Arguments = args;
         this._procParam.FileName = this._config.CTestExecutable;
         this._procParam.WorkingDirectory = this._config.CacheDir;
-        this._proc.StartInfo = this._procParam;
+        this._ctestProcess.StartInfo = this._procParam;
         var logFileName = logFileDir + "\\LastTest.log";
         if (File.Exists(logFileName))
         {
           File.Delete(logFileName);
         }
-        var logMsg = MessagePrefix + "ctest " + test.FullyQualifiedName;
+        var logMsg = "ctest " + test.FullyQualifiedName;
         if (this._config.ActiveConfiguration.Any())
         {
           logMsg += " -C " + this._config.ActiveConfiguration;
         }
-        frameworkHandle.SendMessage(TestMessageLevel.Informational, logMsg);
+        this.Log(TestMessageLevel.Informational, logMsg);
         if (this._cancelled)
         {
           break;
@@ -173,22 +194,22 @@ namespace CTestAdapter
         if (runContext.IsBeingDebugged)
         {
           /// @todo check if child process debugging is available?!?
-          this._proc.Start();
+          this._ctestProcess.Start();
         }
         else
         {
-          this._proc.Start();
+          this._ctestProcess.Start();
         }
-        this._proc.WaitForExit();
+        this._ctestProcess.WaitForExit();
         if (this._cancelled)
         {
           break;
         }
-        var output = this._proc.StandardOutput.ReadToEnd();
+        var output = this._ctestProcess.StandardOutput.ReadToEnd();
         if (!File.Exists(logFileName))
         {
-          frameworkHandle.SendMessage(TestMessageLevel.Warning, "logfile not found: " 
-            + CTestExecutor.ToLinkPath(logFileName));
+          this.Log(TestMessageLevel.Warning, "logfile not found: " 
+            + TestContainerHelper.ToLinkPath(logFileName));
         }
         var content = File.ReadAllText(logFileName);
         var logFileBackup = test.FullyQualifiedName + ".log";
@@ -210,41 +231,42 @@ namespace CTestAdapter
         }
         else
         {
-          frameworkHandle.SendMessage(TestMessageLevel.Warning,
-              MessagePrefix + "could not get runtime of test " + test.FullyQualifiedName);
+          this.Log(TestMessageLevel.Warning,
+              "could not get runtime of test " + test.FullyQualifiedName);
         }
         testResult.Duration = timeSpan;
-        testResult.Outcome = this._proc.ExitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
-        if (this._proc.ExitCode != 0)
+        testResult.Outcome = this._ctestProcess.ExitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
+        if (this._ctestProcess.ExitCode != 0)
         {
           var matchesOutput = CTestExecutor.RegexOutput.Match(content);
           testResult.ErrorMessage = matchesOutput.Groups[CTestExecutor.RegexFieldOutput].Value;
-          frameworkHandle.SendMessage(TestMessageLevel.Error,
-              MessagePrefix + "ERROR IN TEST " + test.FullyQualifiedName + ":");
-          frameworkHandle.SendMessage(TestMessageLevel.Error, output);
-          frameworkHandle.SendMessage(TestMessageLevel.Error,
-              MessagePrefix + "END OF TEST OUTPUT FROM " + test.FullyQualifiedName);
+          this.Log(TestMessageLevel.Error,
+              "ERROR IN TEST " + test.FullyQualifiedName + ":");
+          this.Log(TestMessageLevel.Error, output);
+          this.Log(TestMessageLevel.Error,
+              "END OF TEST OUTPUT FROM " + test.FullyQualifiedName);
         }
-        frameworkHandle.SendMessage(TestMessageLevel.Informational,
-            MessagePrefix + "Log saved to " + CTestExecutor.ToLinkPath(logFileBackup));
+        this.Log(TestMessageLevel.Informational,
+            "Log saved to " + TestContainerHelper.ToLinkPath(logFileBackup));
         frameworkHandle.RecordResult(testResult);
       }
-      this._proc.Dispose();
-      this._proc = null;
-      frameworkHandle.SendMessage(TestMessageLevel.Informational, MessagePrefix + "running tests done");
+      this._ctestProcess.Dispose();
+      this._ctestProcess = null;
+      this._parentProcess = null;
+      this.Log(TestMessageLevel.Informational, "running tests done");
     }
 
-    private bool SetupEnvironment(string source, IMessageLogger h)
+    private bool SetupEnvironment(string source)
     {
       var cacheDir = TestContainerHelper.FindCMakeCacheDirectory(source);
       this._config = CTestAdapterConfig.ReadFromDisk(Path.Combine(cacheDir, Constants.CTestAdapterConfigFileName)) ??
                      CTestAdapterConfig.ReadFromCache(cacheDir);
-      return null != this._config;
-    }
-
-    public static string ToLinkPath(string pathName)
-    {
-      return "file://" + pathName.Replace(" ", "%20");
+      if (this._config == null)
+      {
+        this.Log(TestMessageLevel.Error, "could not initialize environment");
+        return false;
+      }
+      return true;
     }
   }
 }

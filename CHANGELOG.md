@@ -6,7 +6,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
-## 3.0.1 - 2018-01-10
+## 3.2.0 - 2018-01-26
+
+### Fixed
+
+ - wrong version in CHANGELOG
+ - set active configuration default in test executor if not found 
+
+### Added
+
+ - delete .vsix packages when clearing build directories
+ - search for ctest program in CMake cache dir if ctest in CMakeCache.txt is not found
+
+### Changed
+
+ - changed log messages in test discoverer and executor
+ 
+## 3.1.0 - 2018-01-10
 
 ### Added
 

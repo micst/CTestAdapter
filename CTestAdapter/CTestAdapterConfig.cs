@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Xml.Serialization;
 
@@ -8,14 +9,14 @@ namespace CTestAdapter
   [Serializable]
   public class CTestAdapterConfig
   {
-    private string _cacheDir;
-    private string _configFileName;
+    private string _cacheDir = "";
+    private string _configFileName = "";
 
     private bool _dirty = false;
 
-    private string _activeConfiguration;
-    private string _ctestExecutable;
-    private string _cmakeConfigurationTypes;
+    private string _activeConfiguration = "";
+    private string _ctestExecutable = "";
+    private string _cmakeConfigurationTypes = "";
 
     public string CacheDir
     {
@@ -169,6 +170,18 @@ namespace CTestAdapter
         }
       }
       return false;
+    }
+
+    public bool TrySetActiveConfigFromConfigTypes()
+    {
+      var typeString = this._cmakeConfigurationTypes;
+      var types = typeString.Split(';');
+      if (!types.Any())
+      {
+        return false;
+      }
+      this._activeConfiguration = types.First();
+      return true;
     }
   }
 }

@@ -16,3 +16,8 @@ add_test(NAME "special:main"
 add_executable(main_fail main_fail.cpp)
 
 add_test(main_fail main_fail)
+
+# test for cancelling
+add_executable(main_long main_long.cpp)
+
+add_test(main_long main_long)
