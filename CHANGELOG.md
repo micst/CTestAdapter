@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+### Fixed
+
+ - installation error on Visual Studio 2017 update 6 and later
+
 ## 3.2.0 - 2018-01-26
 
 ### Fixed

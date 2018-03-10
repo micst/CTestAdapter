@@ -35,6 +35,9 @@ set(VSPACKAGE_REFERENCES
   System.Windows.Forms
   System.Xml)
 
+set(CTestAdapter_VSVersionRange
+  "[${VS_VERSION}.0]")
+
 if(${VS_VERSION} EQUAL 11)
   list(APPEND VSPACKAGE_REFERENCES
     Microsoft.VisualStudio.Shell.11.0)
@@ -62,6 +65,8 @@ elseif(${VS_VERSION} EQUAL 15)
     Microsoft.VisualStudio.Utilities
     Microsoft.VisualStudio.Shell.Framework
     Microsoft.VisualStudio.Shell.Interop.15.3.DesignTime)
+  set(CTestAdapter_VSVersionRange
+    "[${VS_VERSION}.0,16.0)")
 else()
 endif()
 
